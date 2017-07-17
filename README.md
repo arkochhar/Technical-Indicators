@@ -8,7 +8,7 @@ Collection of Technical Indicators used in Stock Market Analysis. Currently ther
 
 Feel free to contribute to the list of indicators in the project. Following are the areas where contributions will be useful;
 
-1. Addiotnal technical indicators to the list
-2. Optimization to the exsiting algorithms
+1. Additional technical indicators to the list
+2. Optimizations to the exsiting algorithms
 
 Goal is to make this publically available project where people can contribute to indicators used on technical analysis for stock markets.
