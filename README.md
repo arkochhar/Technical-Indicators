@@ -10,5 +10,6 @@ Feel free to contribute to the list of indicators in the project. Following are 
 
 1. Additional technical indicators to the list
 2. Optimizations to the exsiting algorithms
+3. Help create as pip package
 
 Goal is to make this publically available project where people can contribute to indicators used on technical analysis for stock markets.
