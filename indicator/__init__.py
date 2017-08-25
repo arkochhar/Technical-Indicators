@@ -59,30 +59,11 @@ def EMA(df, columnFrom, columnTo, period, linesToIgnore=0, forATR=False):
         df : Pandas DataFrame with new column added with name columnTo
     """
     
-    periodTotal = 0
-    coeff = 2 / (period + 1)
+    if (forATR == True):
+        df[columnTo] = df[columnFrom].ewm(alpha=0.1, min_periods=period+linesToIgnore).mean()
+    else:
+        df[columnTo] = df[columnFrom].ewm(span=period, min_periods=period+linesToIgnore).mean()
     
-    for i in range(0, len(df)):
-        if (i < linesToIgnore):
-            # Ignores number of rows
-            df.set_value(i, columnTo, 0.00)
-        elif (i < linesToIgnore + period - 1):
-            # Add rows to compute first Simple Moving Average
-            periodTotal += df.get_value(i, columnFrom)
-            df.set_value(i, columnTo, 0.00)
-        elif (i < linesToIgnore + period):
-            # Compute first Simple Moving Average
-            periodTotal += df.get_value(i, columnFrom)
-            df.set_value(i, columnTo, (periodTotal / period))
-        else:
-            # Compute EMA for each subsequent row
-            if (forATR == True):
-                # use formula for computing ATR
-                df.set_value(i, columnTo, (0.1 * df.get_value(i, columnFrom) + (1 - 0.1) * df.get_value(i - 1, columnTo)))
-            else:
-                # use regular formula for computing EMA
-                df.set_value(i, columnTo, (((df.get_value(i, columnFrom) - df.get_value(i - 1, columnTo)) * coeff) + df.get_value(i - 1, columnTo)))
-        
     return df
 
 def ATR(df, period):
@@ -179,6 +160,19 @@ def SuperTrend(df, period, multiplier):
                                          if df.get_value(i, 'basic_lb') > df.get_value(i-1, 'final_lb') or df.get_value(i-1, 'close') < df.get_value(i-1, 'final_lb') 
                                          else df.get_value(i-1, 'final_lb')))
 
+    
+    #df['basic_ubN'] = (df['high'] + df['low']) / 2 + multiplier * df[atr]
+    #df['basic_lbN'] = (df['high'] + df['low']) / 2 - multiplier * df[atr]
+    
+    #for i in range(0, period):
+    #    df.set_value(i, 'basic_ubN', 0.00)
+    #    df.set_value(i, 'basic_lbN', 0.00)
+    #    df.set_value(i, 'final_ubN', 0.00)
+    #    df.set_value(i, 'final_lbN', 0.00)
+    
+    #df['final_ubN'] = np.where(np.logical_or(df['basic_ubN'] < df['final_ubN'].shift(), df['close'].shift() > df['final_ubN'].shift()), df['basic_ubN'], df['final_ubN'].shift())
+    #df['final_lbN'] = np.where(np.logical_or(df['basic_lbN'] > df['final_lbN'].shift(), df['close'].shift() < df['final_lbN'].shift()), df['basic_lbN'], df['final_lbN'].shift())
+    
     # Set the Supertrend value
     for i in range(0, len(df)):
         if i < period:
@@ -199,9 +193,14 @@ def SuperTrend(df, period, multiplier):
                                 )
                         )
     
+    #df[st + 'N'] = np.where(np.logical_and((df[st].shift() == df['final_ub'].shift()), (df['close'] <= df['final_ub'])), df['final_ub'], \
+    #               np.where(np.logical_and((df[st].shift() == df['final_ub'].shift()), (df['close'] > df['final_ub'])), df['final_lb'], \
+    #               np.where(np.logical_and((df[st].shift() == df['final_lb'].shift()), (df['close'] >= df['final_lb'])), df['final_lb'], \
+    #               np.where(np.logical_and((df[st].shift() == df['final_lb'].shift()), (df['close'] < df['final_ub'])), df['final_ub'], 0))))
     
     # Mark the trend direction up/down
     df[stx] = np.where((df[st] > 0.00), np.where((df['close'] < df[st]), 'down',  'up'), np.NaN)
+    #df[stx + 'N'] = np.where((df[st + 'N'] > 0.00), np.where((df['close'] < df[st + 'N']), 'down',  'up'), np.NaN)
 
     # Remove basic and final bands from the columns
     df.drop(['basic_ub', 'basic_lb', 'final_ub', 'final_lb'], inplace=True, axis=1)
@@ -361,9 +360,14 @@ if __name__ == '__main__':
     df = pd.DataFrame(data["data"]["candles"], columns=['date', 'open', 'high', 'low', 'close', 'volume'])
     
     # Columns as added by each function specific to their computations
-    EMA(df, 'close', 'ema_5', 5)
-    ATR(df, 14)
+    #EMA(df, 'close', 'ema_5', 5)
+    #EMA(df, 'close', 'ema_5A', 5, forATR=True)
+    #ATR(df, 14)
     SuperTrend(df, 10, 3)
-    MACD(df)
+    #MACD(df)
     
-    print(df)
+    #print(df.loc[:, ['st_10_3', 'st_10_3N', 'stx_10_3', 'stx_10_3N']])
+    #print(df.loc[:, ['basic_ub', 'basic_ubN', 'basic_lb', 'basic_lbN']])
+    #print(df.loc[:, ['final_ub', 'final_ubN', 'final_lb', 'final_lbN']])
+    print(df.head(10))
+    print(df.tail(10))
