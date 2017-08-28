@@ -35,10 +35,10 @@ Usage :
         }
     }
     
-# Date must be present as a Pandas DataFrame with ['date', 'open', 'high', 'low', 'close', 'volume'] as columns
+- Date must be present as a Pandas DataFrame with ['date', 'open', 'high', 'low', 'close', 'volume'] as columns
 df = pd.DataFrame(data["data"]["candles"], columns=['date', 'open', 'high', 'low', 'close', 'volume'])
 
-# Columns as added by each function specific to their computations
+- Columns as added by each function specific to their computations
 EMA(df, 'close', 'ema_5', 5)
 ATR(df, 14)
 SuperTrend(df, 10, 3)
