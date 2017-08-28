@@ -159,21 +159,6 @@ def SuperTrend(df, period, multiplier):
             df.set_value(i, 'final_lb', (df.get_value(i, 'basic_lb') 
                                          if df.get_value(i, 'basic_lb') > df.get_value(i-1, 'final_lb') or df.get_value(i-1, 'close') < df.get_value(i-1, 'final_lb') 
                                          else df.get_value(i-1, 'final_lb')))
-
-    
-    df['basic_ubN'] = (df['high'] + df['low']) / 2 + multiplier * df[atr]
-    df['basic_lbN'] = (df['high'] + df['low']) / 2 - multiplier * df[atr]
-    
-    #for i in range(0, period):
-    #    df.set_value(i, 'basic_ubN', 0.00)
-    #    df.set_value(i, 'basic_lbN', 0.00)
-    #    df.set_value(i, 'final_ubN', 0.00)
-    #    df.set_value(i, 'final_lbN', 0.00)
-    
-    df['final_ubN'] = 0.00
-    df['final_lbN'] = 0.00
-    df['final_ubN'] = np.where(np.logical_or(df['basic_ubN'] < df['final_ubN'].shift(), df['close'].shift() > df['final_ubN'].shift()), df['basic_ubN'], df['final_ubN'].shift())
-    df['final_lbN'] = np.where(np.logical_or(df['basic_lbN'] > df['final_lbN'].shift(), df['close'].shift() < df['final_lbN'].shift()), df['basic_lbN'], df['final_lbN'].shift())
     
     # Set the Supertrend value
     for i in range(0, len(df)):
@@ -195,17 +180,11 @@ def SuperTrend(df, period, multiplier):
                                 )
                         )
     
-    #df[st + 'N'] = np.where(np.logical_and((df[st].shift() == df['final_ub'].shift()), (df['close'] <= df['final_ub'])), df['final_ub'], \
-    #               np.where(np.logical_and((df[st].shift() == df['final_ub'].shift()), (df['close'] > df['final_ub'])), df['final_lb'], \
-    #               np.where(np.logical_and((df[st].shift() == df['final_lb'].shift()), (df['close'] >= df['final_lb'])), df['final_lb'], \
-    #               np.where(np.logical_and((df[st].shift() == df['final_lb'].shift()), (df['close'] < df['final_ub'])), df['final_ub'], 0))))
-    
     # Mark the trend direction up/down
     df[stx] = np.where((df[st] > 0.00), np.where((df['close'] < df[st]), 'down',  'up'), np.NaN)
-    #df[stx + 'N'] = np.where((df[st + 'N'] > 0.00), np.where((df['close'] < df[st + 'N']), 'down',  'up'), np.NaN)
 
     # Remove basic and final bands from the columns
-    #df.drop(['basic_ub', 'basic_lb', 'final_ub', 'final_lb'], inplace=True, axis=1)
+    df.drop(['basic_ub', 'basic_lb', 'final_ub', 'final_lb'], inplace=True, axis=1)
     
     return df
 
@@ -362,14 +341,10 @@ if __name__ == '__main__':
     df = pd.DataFrame(data["data"]["candles"], columns=['date', 'open', 'high', 'low', 'close', 'volume'])
     
     # Columns as added by each function specific to their computations
-    #EMA(df, 'close', 'ema_5', 5)
-    #EMA(df, 'close', 'ema_5A', 5, forATR=True)
-    #ATR(df, 14)
+    EMA(df, 'close', 'ema_5', 5)
+    ATR(df, 14)
     SuperTrend(df, 10, 3)
-    #MACD(df)
+    MACD(df)
     
-    #print(df.loc[:, ['st_10_3', 'st_10_3N', 'stx_10_3', 'stx_10_3N']])
-    print(df.loc[:, ['basic_ub', 'basic_ubN', 'basic_lb', 'basic_lbN']])
-    print(df.loc[:, ['final_ub', 'final_ubN', 'final_lb', 'final_lbN']])
-    #print(df.head(10))
-    #print(df.tail(10))
+    print(df.head(10))
+    print(df.tail(10))
