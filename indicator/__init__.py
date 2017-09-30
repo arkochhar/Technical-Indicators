@@ -43,6 +43,8 @@ Usage :
     MACD(df)
 """
 
+global first
+
 def EMA(df, columnFrom, columnTo, period, linesToIgnore=0, forATR=False):
     """
     Function to compute Exponential Moving Average (EMA)
@@ -58,12 +60,18 @@ def EMA(df, columnFrom, columnTo, period, linesToIgnore=0, forATR=False):
     Returns :
         df : Pandas DataFrame with new column added with name columnTo
     """
+
+    sma = df[:period][columnFrom].rolling(window=period).mean()
+    rest = df[period:][columnFrom]
     
     if (forATR == True):
-        df[columnTo] = df[columnFrom].ewm(com=period, min_periods=period+linesToIgnore).mean()
+        #df[columnTo] = pd.concat([sma, rest])
+        #df[columnTo] = np.where(df[columnTo] == df[columnFrom], (((df[columnTo].shift() * (period - 1)) + df[columnTo]) /  period), df[columnTo])
+        df[columnTo] = pd.concat([sma, rest]).ewm(span=period, min_periods=linesToIgnore, adjust=False).mean()
     else:
-        df[columnTo] = df[columnFrom].ewm(span=period, min_periods=period+linesToIgnore).mean()
+        df[columnTo] = pd.concat([sma, rest]).ewm(span=period, min_periods=linesToIgnore, adjust=False).mean()
     
+    df[columnTo].fillna(0, inplace=True)
     return df
 
 def ATR(df, period):
@@ -232,7 +240,7 @@ def MACD(df, fastEMA=12, slowEMA=26, signal=9):
 if __name__ == '__main__':
     import quandl
     df = quandl.get("NSE/NIFTY_50")
-    df.reset_index(inplace=True)
+    df.drop(['Open', 'High', 'Low', 'Shares Traded', 'Turnover (Rs. Cr)'], inplace=True, axis=1)
  
     # unit test EMA algorithm
     def test_ema(forATR=False):
@@ -247,6 +255,7 @@ if __name__ == '__main__':
         coef = 2 / (test_period + 1)
         periodTotal = 0
         colTest = colTo + '_test'
+        df.reset_index(inplace=True)
         for i in range(0, len(df)):
             if (i < linesToIgnore):
                 df.set_value(i, colTest, 0.00)
@@ -261,7 +270,9 @@ if __name__ == '__main__':
                     df.set_value(i, colTest, (((df.get_value(i - 1, colTest) * (test_period - 1)) + df.get_value(i, colFrom)) / test_period))
                 else:
                     df.set_value(i, colTest, (((df.get_value(i, colFrom) - df.get_value(i - 1, colTest)) * coef) + df.get_value(i - 1, colTest)))
-         
+        
+        df.set_index('Date', inplace=True)
+ 
         df[colTest + '_check'] = df[colTo].round(6) == df[colTest].round(6)
         print('EMA Test with ATR {}'.format(forATR))
         print('\tTotal Rows: {}'.format(len(df)))
@@ -269,11 +280,12 @@ if __name__ == '__main__':
         print('\tSuccess Rate: {}%'.format(round((df[colTest + '_check'].sum() / len(df)) * 100, 2)))
     
     test_ema()
-    #print(df.head(10))
-    #print(df.tail(10))
+    print(df.head(10))
+    print(df.tail(10))
+    df.drop(['ema_5', 'ema_5_test', 'ema_5_test_check'], inplace=True, axis=1)
     test_ema(True)
-    #print(df.head(10))
-    #print(df.tail(10))
+    print(df.head(10))
+    print(df.tail(10))
     
     #ATR(df, 14)
     #SuperTrend(df, 10, 3)
