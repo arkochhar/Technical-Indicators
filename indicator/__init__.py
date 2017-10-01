@@ -61,15 +61,12 @@ def EMA(df, columnFrom, columnTo, period, linesToIgnore=0, forATR=False):
         df : Pandas DataFrame with new column added with name columnTo
     """
 
-    sma = df[:period][columnFrom].rolling(window=period).mean()
-    rest = df[period:][columnFrom]
+    con = pd.concat([df[:period][columnFrom].rolling(window=period).mean(), df[period:][columnFrom]])
     
     if (forATR == True):
-        #df[columnTo] = pd.concat([sma, rest])
-        #df[columnTo] = np.where(df[columnTo] == df[columnFrom], (((df[columnTo].shift() * (period - 1)) + df[columnTo]) /  period), df[columnTo])
-        df[columnTo] = pd.concat([sma, rest]).ewm(span=period, min_periods=linesToIgnore, adjust=False).mean()
+        df[columnTo] = con.ewm(alpha=1 / period, min_periods=linesToIgnore, adjust=False).mean()
     else:
-        df[columnTo] = pd.concat([sma, rest]).ewm(span=period, min_periods=linesToIgnore, adjust=False).mean()
+        df[columnTo] = con.ewm(span=period, min_periods=linesToIgnore, adjust=False).mean()
     
     df[columnTo].fillna(0, inplace=True)
     return df
