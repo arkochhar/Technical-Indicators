@@ -286,7 +286,7 @@ if __name__ == '__main__':
     import quandl
     import time
     
-    df = quandl.get("NSE/NIFTY_50")
+    df = quandl.get("NSE/NIFTY_50", authtoken="E8LGujxYzNsiUWYDPbGF", start_date='1997-01-01')
     df.drop(['Shares Traded', 'Turnover (Rs. Cr)'], inplace=True, axis=1)
  
     # unit test EMA algorithm
@@ -298,7 +298,7 @@ if __name__ == '__main__':
         start = time.time()
         EMA(df, colFrom, colTo, test_period, alpha=forATR)
         end = time.time()
-        print('Time take by Pandas computations for EMA {}'.format(end-start))
+        print('Time taken by Pandas computations for EMA {}'.format(end-start))
 
         start = time.time()
         coef = 2 / (test_period + 1)
@@ -322,7 +322,7 @@ if __name__ == '__main__':
         
         df.set_index('Date', inplace=True)
         end = time.time()
-        print('Time take by manual computations for EMA {}'.format(end-start))
+        print('Time taken by manual computations for EMA {}'.format(end-start))
  
         df[colTest + '_check'] = df[colTo].round(6) == df[colTest].round(6)
         print('\tTotal Rows: {}'.format(len(df)))
@@ -334,7 +334,7 @@ if __name__ == '__main__':
         start = time.time()
         ATR(df, 7)
         end = time.time()
-        print('Time take by Pandas computations for ATR {}'.format(end-start))
+        print('Time taken by Pandas computations for ATR {}'.format(end-start))
 
         start = time.time()
         ignore=0
@@ -366,7 +366,7 @@ if __name__ == '__main__':
                 df.set_value(i, colTest, (((df.get_value(i - 1, colTest) * (test_period - 1)) + df.get_value(i, colFrom)) / test_period))    
         df.set_index('Date', inplace=True)
         end = time.time()
-        print('Time take by manual computations for ATR {}'.format(end-start))
+        print('Time taken by manual computations for ATR {}'.format(end-start))
         
         df[colTest + '_check'] = df[colTo].round(6) == df[colTest].round(6)
         print('\tTotal Rows: {}'.format(len(df)))
@@ -378,7 +378,7 @@ if __name__ == '__main__':
         start = time.time()
         MACD(df)
         end = time.time()
-        print('Time take by Pandas computations for MACD {}'.format(end-start))
+        print('Time taken by Pandas computations for MACD {}'.format(end-start))
 
         df.reset_index(inplace=True)
 
@@ -465,7 +465,7 @@ if __name__ == '__main__':
         df[hist_test] = np.where(np.logical_and(np.logical_not(df[macd_test] == 0), np.logical_not(df[sig_test] == 0)), df[macd_test] - df[sig_test], 0)
 
         end = time.time()
-        print('Time take by manual computations for MACD {}'.format(end-start))
+        print('Time taken by manual computations for MACD {}'.format(end-start))
 
         df.set_index('Date', inplace=True)
 
@@ -498,7 +498,7 @@ if __name__ == '__main__':
         start = time.time()
         SuperTrend(df, period, multiplier)
         end = time.time()
-        print('Time take by Pandas computations for SuperTrend {}'.format(end-start))
+        print('Time taken by Pandas computations for SuperTrend {}'.format(end-start))
         
         start = time.time()
         ATR(df, period)
@@ -507,41 +507,25 @@ if __name__ == '__main__':
        
         index = df.index.name
         df.reset_index(inplace=True)
-        
+
+        df.loc[:period, 'basic_ub_t'] = 0.00
+        df.loc[:period, 'basic_lb_t'] = 0.00
+         
         # Compute final upper and lower bands
-        for i in range(0, len(df)):
-            if i < period:
-                df.set_value(i, 'basic_ub_t', 0.00)
-                df.set_value(i, 'basic_lb_t', 0.00)
-                df.set_value(i, 'final_ub_t', 0.00)
-                df.set_value(i, 'final_lb_t', 0.00)
-            else:
-                df.set_value(i, 'final_ub_t', (df.get_value(i, 'basic_ub_t') 
-                                             if df.get_value(i, 'basic_ub_t') < df.get_value(i-1, 'final_ub_t') or df.get_value(i-1, 'Close') > df.get_value(i-1, 'final_ub_t') 
-                                             else df.get_value(i-1, 'final_ub_t')))
-                df.set_value(i, 'final_lb_t', (df.get_value(i, 'basic_lb_t') 
-                                             if df.get_value(i, 'basic_lb_t') > df.get_value(i-1, 'final_lb_t') or df.get_value(i-1, 'Close') < df.get_value(i-1, 'final_lb_t') 
-                                             else df.get_value(i-1, 'final_lb_t')))
-        
+        df['final_ub_t'] = 0.00
+        df['final_lb_t'] = 0.00
+        for i in range(period, len(df)):
+            df.ix[i, 'final_ub_t'] = df.ix[i, 'basic_ub_t'] if df.ix[i, 'basic_ub_t'] < df.ix[i - 1, 'final_ub_t'] or df.ix[i - 1, 'Close'] > df.ix[i - 1, 'final_ub_t'] else df.ix[i - 1, 'final_ub_t']
+            df.ix[i, 'final_lb_t'] = df.ix[i, 'basic_lb_t'] if df.ix[i, 'basic_lb_t'] > df.ix[i - 1, 'final_lb_t'] or df.ix[i - 1, 'Close'] < df.ix[i - 1, 'final_lb_t'] else df.ix[i - 1, 'final_lb_t']
+          
         # Set the Supertrend value
-        for i in range(0, len(df)):
-            if i < period:
-                df.set_value(i, st_test, 0.00)
-            else:
-                df.set_value(i, st_test, (df.get_value(i, 'final_ub_t')
-                                     if ((df.get_value(i-1, st_test) == df.get_value(i-1, 'final_ub_t')) and (df.get_value(i, 'Close') <= df.get_value(i, 'final_ub_t')))
-                                     else (df.get_value(i, 'final_lb_t')
-                                           if ((df.get_value(i-1, st_test) == df.get_value(i-1, 'final_ub_t')) and (df.get_value(i, 'Close') > df.get_value(i, 'final_ub_t')))
-                                           else (df.get_value(i, 'final_lb_t')
-                                                 if ((df.get_value(i-1, st_test) == df.get_value(i-1, 'final_lb_t')) and (df.get_value(i, 'Close') >= df.get_value(i, 'final_lb_t')))
-                                                 else (df.get_value(i, 'final_ub_t')
-                                                       if((df.get_value(i-1, st_test) == df.get_value(i-1, 'final_lb_t')) and (df.get_value(i, 'Close') < df.get_value(i, 'final_lb_t')))
-                                                       else 0.00
-                                                      )
-                                                )
-                                          ) 
-                                    )
-                            )
+        df[st_test] = 0.00
+        for i in range(period, len(df)):
+            df.ix[i, st_test] = df.ix[i, 'final_ub_t'] if df.ix[i - 1, st_test] == df.ix[i - 1, 'final_ub_t'] and df.ix[i, 'Close'] <= df.ix[i, 'final_ub_t'] else \
+                                df.ix[i, 'final_lb_t'] if df.ix[i - 1, st_test] == df.ix[i - 1, 'final_ub_t'] and df.ix[i, 'Close'] >  df.ix[i, 'final_ub_t'] else \
+                                df.ix[i, 'final_lb_t'] if df.ix[i - 1, st_test] == df.ix[i - 1, 'final_lb_t'] and df.ix[i, 'Close'] >= df.ix[i, 'final_lb_t'] else \
+                                df.ix[i, 'final_ub_t'] if df.ix[i - 1, st_test] == df.ix[i - 1, 'final_lb_t'] and df.ix[i, 'Close'] <  df.ix[i, 'final_lb_t'] else 0.00 
+                
     
         df.set_index(index, inplace=True)
         
@@ -551,7 +535,7 @@ if __name__ == '__main__':
         # Remove basic and final bands from the columns
         df.drop(['basic_ub_t', 'basic_lb_t', 'final_ub_t', 'final_lb_t'], inplace=True, axis=1)
         end = time.time()
-        print('Time take by manual computations for SuperTrend {}'.format(end-start))
+        print('Time taken by manual computations for SuperTrend {}'.format(end-start))
 
         print('ST Stats')
         df[st + '_check'] = df[st].round(6) == df[st_test].round(6)
@@ -573,7 +557,7 @@ if __name__ == '__main__':
         start = time.time()
         HA(df)
         end = time.time()
-        print('Time take by Pandas computations of HA {}'.format(end-start))
+        print('Time taken by Pandas computations of HA {}'.format(end-start))
         
         start = time.time()
         df['HA_Close_t']=(df['Open']+ df['High']+ df['Low']+df['Close'])/4
@@ -591,15 +575,14 @@ if __name__ == '__main__':
         df['HA_High_t']=df[['HA_Open_t','HA_Close_t','High']].max(axis=1)
         df['HA_Low_t']=df[['HA_Open_t','HA_Close_t','Low']].min(axis=1)
         end = time.time()
-        print('Time take by manual computations of HA {}'.format(end-start))
+        print('Time taken by manual computations of HA {}'.format(end-start))
         
-
-    #test_ema()
-    #test_ema(forATR=True)
-    #test_ATR()
-    #test_SuperTrend()
-    #test_MACD()
+    test_ema()
+    test_ema(forATR=True)
+    test_ATR()
+    test_SuperTrend()
+    test_MACD()
     test_HA()
     
     #print(df.head(10))
-    print(df.tail(10))
+    #print(df.tail(10))
