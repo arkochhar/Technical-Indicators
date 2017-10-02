@@ -43,6 +43,46 @@ Usage :
     MACD(df)
 """
 
+def HA(df, ohlc=['Open', 'High', 'Low', 'Close']):
+    """
+    Function to compute Heiken Ashi Candles (HA)
+    
+    Args :
+        df : Pandas DataFrame which contains ['date', 'open', 'high', 'low', 'close', 'volume'] columns
+        ohlc: List defining OHLC Column names (default ['Open', 'High', 'Low', 'Close'])
+        
+    Returns :
+        df : Pandas DataFrame with new columns added for 
+            Heiken Ashi Close (HA_$ohlc[3])
+            Heiken Ashi Open (HA_$ohlc[0])
+            Heiken Ashi High (HA_$ohlc[1])
+            Heiken Ashi Low (HA_$ohlc[2])
+    """
+
+    ha_open = 'HA_' + ohlc[0]
+    ha_high = 'HA_' + ohlc[1]
+    ha_low = 'HA_' + ohlc[2]
+    ha_close = 'HA_' + ohlc[3]
+    
+    df[ha_close] = (df[ohlc[0]] + df[ohlc[1]] + df[ohlc[2]] + df[ohlc[3]]) / 4
+
+    idx = df.index.name
+    df.reset_index(inplace=True)
+    
+    for i in range(0, len(df)):
+        if i == 0:
+            df.set_value(i, ha_open, ((df.get_value(i, ohlc[0]) + df.get_value(i, ohlc[3])) / 2))
+        else:
+            df.set_value(i, ha_open, ((df.get_value(i - 1, ha_open) + df.get_value(i - 1, ha_open)) / 2))
+            
+    if idx:
+        df.set_index(idx, inplace=True)
+    
+    df[ha_high]=df[[ha_open, ha_close, ohlc[1]]].max(axis=1)
+    df[ha_low]=df[[ha_open, ha_close, ohlc[2]]].min(axis=1)
+    
+    return df
+
 def EMA(df, base, target, period, alpha=False):
     """
     Function to compute Exponential Moving Average (EMA)
@@ -150,10 +190,29 @@ def SuperTrend(df, period, multiplier, ohlc=['Open', 'High', 'Low', 'Close']):
     # Compute basic upper and lower bands
     df['basic_ub'] = (df[ohlc[1]] + df[ohlc[2]]) / 2 + multiplier * df[atr]
     df['basic_lb'] = (df[ohlc[1]] + df[ohlc[2]]) / 2 - multiplier * df[atr]
-   
+#     df.loc[:period, 'basic_ub'] = 0.00
+#     df.loc[:period, 'basic_lb'] = 0.00
+#     
+#     # Compute final upper and lower bands
+#     df['final_ub'] = 0.00
+#     df['final_lb'] = 0.00
+#     #df['final_ub'] = np.where(np.logical_or(df['basic_ub'] < df['final_ub'].shift(), df[ohlc[3]].shift() > df['final_ub'].shift()), df['basic_ub'], df['final_ub'].shift())
+#     #df['final_lb'] = np.where(np.logical_or(df['basic_lb'] > df['final_lb'].shift(), df[ohlc[3]].shift() < df['final_lb'].shift()), df['basic_lb'], df['final_lb'].shift())
+#     for i in range(0, len(df)):
+#         df.ix[i, 'final_ub'] = df.ix[i, 'basic_ub'] if df.ix[i, 'basic_ub'] < df.ix[i - 1, 'final_ub'] or df.ix[i - 1, ohlc[3]] > df.ix[i - 1, 'final_ub'] else df.ix[i - 1, 'final_ub']
+#         df.ix[i, 'final_lb'] = df.ix[i, 'basic_lb'] if df.ix[i, 'basic_lb'] > df.ix[i - 1, 'final_lb'] or df.ix[i - 1, ohlc[3]] < df.ix[i - 1, 'final_lb'] else df.ix[i - 1, 'final_lb']
+#      
+#     # Set the Supertrend value
+#     df[st] = 0.00
+#     df[st] = np.where(np.logical_and(df[st].shift() == df['final_ub'].shift(), df[ohlc[3]] <= df['final_ub']), df['final_ub'], 
+#                       np.where(np.logical_and(df[st].shift() == df['final_ub'].shift(), df[ohlc[3]] > df['final_ub']), df['final_lb'], 
+#                                np.where(np.logical_and(df[st].shift() == df['final_lb'].shift(), df[ohlc[3]] >= df['final_lb']), df['final_lb'], 
+#                                         np.where(np.logical_and(df[st].shift() == df['final_lb'].shift(), df[ohlc[3]] < df['final_lb']), df['final_ub'], 
+#                                                  0.00))))
+
     index = df.index.name
-    df.reset_index(inplace=True)    
-    
+    df.reset_index(inplace=True)
+     
     # Compute final upper and lower bands
     for i in range(0, len(df)):
         if i < period:
@@ -163,34 +222,35 @@ def SuperTrend(df, period, multiplier, ohlc=['Open', 'High', 'Low', 'Close']):
             df.set_value(i, 'final_lb', 0.00)
         else:
             df.set_value(i, 'final_ub', (df.get_value(i, 'basic_ub') 
-                                         if df.get_value(i, 'basic_ub') < df.get_value(i-1, 'final_ub') or df.get_value(i-1, ohlc[3]) > df.get_value(i-1, 'final_ub') 
+                                         if df.get_value(i, 'basic_ub') < df.get_value(i-1, 'final_ub') or df.get_value(i-1, 'Close') > df.get_value(i-1, 'final_ub') 
                                          else df.get_value(i-1, 'final_ub')))
             df.set_value(i, 'final_lb', (df.get_value(i, 'basic_lb') 
-                                         if df.get_value(i, 'basic_lb') > df.get_value(i-1, 'final_lb') or df.get_value(i-1, ohlc[3]) < df.get_value(i-1, 'final_lb') 
+                                         if df.get_value(i, 'basic_lb') > df.get_value(i-1, 'final_lb') or df.get_value(i-1, 'Close') < df.get_value(i-1, 'final_lb') 
                                          else df.get_value(i-1, 'final_lb')))
-    
+     
     # Set the Supertrend value
     for i in range(0, len(df)):
         if i < period:
             df.set_value(i, st, 0.00)
         else:
             df.set_value(i, st, (df.get_value(i, 'final_ub')
-                                 if ((df.get_value(i-1, st) == df.get_value(i-1, 'final_ub')) and (df.get_value(i, ohlc[3]) <= df.get_value(i, 'final_ub')))
+                                 if ((df.get_value(i-1, st) == df.get_value(i-1, 'final_ub')) and (df.get_value(i, 'Close') <= df.get_value(i, 'final_ub')))
                                  else (df.get_value(i, 'final_lb')
-                                       if ((df.get_value(i-1, st) == df.get_value(i-1, 'final_ub')) and (df.get_value(i, ohlc[3]) > df.get_value(i, 'final_ub')))
+                                       if ((df.get_value(i-1, st) == df.get_value(i-1, 'final_ub')) and (df.get_value(i, 'Close') > df.get_value(i, 'final_ub')))
                                        else (df.get_value(i, 'final_lb')
-                                             if ((df.get_value(i-1, st) == df.get_value(i-1, 'final_lb')) and (df.get_value(i, ohlc[3]) >= df.get_value(i, 'final_lb')))
+                                             if ((df.get_value(i-1, st) == df.get_value(i-1, 'final_lb')) and (df.get_value(i, 'Close') >= df.get_value(i, 'final_lb')))
                                              else (df.get_value(i, 'final_ub')
-                                                   if((df.get_value(i-1, st) == df.get_value(i-1, 'final_lb')) and (df.get_value(i, ohlc[3]) < df.get_value(i, 'final_lb')))
+                                                   if((df.get_value(i-1, st) == df.get_value(i-1, 'final_lb')) and (df.get_value(i, 'Close') < df.get_value(i, 'final_lb')))
                                                    else 0.00
                                                   )
                                             )
                                       ) 
                                 )
                         )
+ 
+    if index:
+        df.set_index(index, inplace=True)
 
-    df.set_index(index, inplace=True)
-    
     # Mark the trend direction up/down
     df[stx] = np.where((df[st] > 0.00), np.where((df[ohlc[3]] < df[st]), 'down',  'up'), np.NaN)
 
@@ -245,7 +305,7 @@ if __name__ == '__main__':
     import quandl
     import time
     
-    df = quandl.get("NSE/NIFTY_50")
+    df = quandl.get("NSE/NIFTY_50", authtoken="E8LGujxYzNsiUWYDPbGF", start_date='1997-01-01')
  
     # unit test EMA algorithm
     def test_ema(colFrom = 'Close', test_period = 5, ignore = 0, forATR=False):
@@ -444,8 +504,8 @@ if __name__ == '__main__':
         print('\tSuccess Rate: {}%'.format(round((df[hist + '_check'].sum() / len(df)) * 100, 2)))
         
     def test_SuperTrend():
-        period = 7
-        multiplier = 2
+        period = 10
+        multiplier = 3
         atr = 'ATR_' + str(period)
         st = 'ST_' + str(period) + '_' + str(multiplier)
         stx = 'STX_' + str(period) + '_' + str(multiplier)
@@ -460,8 +520,8 @@ if __name__ == '__main__':
         
         start = time.time()
         ATR(df, period)
-        df['basic_ub'] = (df['High'] + df['Low']) / 2 + multiplier * df[atr]
-        df['basic_lb'] = (df['High'] + df['Low']) / 2 - multiplier * df[atr]
+        df['basic_ub_t'] = (df['High'] + df['Low']) / 2 + multiplier * df[atr]
+        df['basic_lb_t'] = (df['High'] + df['Low']) / 2 - multiplier * df[atr]
        
         index = df.index.name
         df.reset_index(inplace=True)
@@ -469,31 +529,31 @@ if __name__ == '__main__':
         # Compute final upper and lower bands
         for i in range(0, len(df)):
             if i < period:
-                df.set_value(i, 'basic_ub', 0.00)
-                df.set_value(i, 'basic_lb', 0.00)
-                df.set_value(i, 'final_ub', 0.00)
-                df.set_value(i, 'final_lb', 0.00)
+                df.set_value(i, 'basic_ub_t', 0.00)
+                df.set_value(i, 'basic_lb_t', 0.00)
+                df.set_value(i, 'final_ub_t', 0.00)
+                df.set_value(i, 'final_lb_t', 0.00)
             else:
-                df.set_value(i, 'final_ub', (df.get_value(i, 'basic_ub') 
-                                             if df.get_value(i, 'basic_ub') < df.get_value(i-1, 'final_ub') or df.get_value(i-1, 'Close') > df.get_value(i-1, 'final_ub') 
-                                             else df.get_value(i-1, 'final_ub')))
-                df.set_value(i, 'final_lb', (df.get_value(i, 'basic_lb') 
-                                             if df.get_value(i, 'basic_lb') > df.get_value(i-1, 'final_lb') or df.get_value(i-1, 'Close') < df.get_value(i-1, 'final_lb') 
-                                             else df.get_value(i-1, 'final_lb')))
+                df.set_value(i, 'final_ub_t', (df.get_value(i, 'basic_ub_t') 
+                                             if df.get_value(i, 'basic_ub_t') < df.get_value(i-1, 'final_ub_t') or df.get_value(i-1, 'Close') > df.get_value(i-1, 'final_ub_t') 
+                                             else df.get_value(i-1, 'final_ub_t')))
+                df.set_value(i, 'final_lb_t', (df.get_value(i, 'basic_lb_t') 
+                                             if df.get_value(i, 'basic_lb_t') > df.get_value(i-1, 'final_lb_t') or df.get_value(i-1, 'Close') < df.get_value(i-1, 'final_lb_t') 
+                                             else df.get_value(i-1, 'final_lb_t')))
         
         # Set the Supertrend value
         for i in range(0, len(df)):
             if i < period:
                 df.set_value(i, st_test, 0.00)
             else:
-                df.set_value(i, st_test, (df.get_value(i, 'final_ub')
-                                     if ((df.get_value(i-1, st) == df.get_value(i-1, 'final_ub')) and (df.get_value(i, 'Close') <= df.get_value(i, 'final_ub')))
-                                     else (df.get_value(i, 'final_lb')
-                                           if ((df.get_value(i-1, st) == df.get_value(i-1, 'final_ub')) and (df.get_value(i, 'Close') > df.get_value(i, 'final_ub')))
-                                           else (df.get_value(i, 'final_lb')
-                                                 if ((df.get_value(i-1, st) == df.get_value(i-1, 'final_lb')) and (df.get_value(i, 'Close') >= df.get_value(i, 'final_lb')))
-                                                 else (df.get_value(i, 'final_ub')
-                                                       if((df.get_value(i-1, st) == df.get_value(i-1, 'final_lb')) and (df.get_value(i, 'Close') < df.get_value(i, 'final_lb')))
+                df.set_value(i, st_test, (df.get_value(i, 'final_ub_t')
+                                     if ((df.get_value(i-1, st_test) == df.get_value(i-1, 'final_ub_t')) and (df.get_value(i, 'Close') <= df.get_value(i, 'final_ub_t')))
+                                     else (df.get_value(i, 'final_lb_t')
+                                           if ((df.get_value(i-1, st_test) == df.get_value(i-1, 'final_ub_t')) and (df.get_value(i, 'Close') > df.get_value(i, 'final_ub_t')))
+                                           else (df.get_value(i, 'final_lb_t')
+                                                 if ((df.get_value(i-1, st_test) == df.get_value(i-1, 'final_lb_t')) and (df.get_value(i, 'Close') >= df.get_value(i, 'final_lb_t')))
+                                                 else (df.get_value(i, 'final_ub_t')
+                                                       if((df.get_value(i-1, st_test) == df.get_value(i-1, 'final_lb_t')) and (df.get_value(i, 'Close') < df.get_value(i, 'final_lb_t')))
                                                        else 0.00
                                                       )
                                                 )
@@ -507,25 +567,57 @@ if __name__ == '__main__':
         df[stx_test] = np.where((df[st_test] > 0.00), np.where((df['Close'] < df[st_test]), 'down',  'up'), np.NaN)
     
         # Remove basic and final bands from the columns
-        df.drop(['basic_ub', 'basic_lb', 'final_ub', 'final_lb'], inplace=True, axis=1)
+        df.drop(['basic_ub_t', 'basic_lb_t', 'final_ub_t', 'final_lb_t'], inplace=True, axis=1)
         end = time.time()
         print('Time take by manual computations for SuperTrend {}'.format(end-start))
 
+        print('ST Stats')
         df[st + '_check'] = df[st].round(6) == df[st_test].round(6)
         print('\tTotal Rows: {}'.format(len(df)))
         print('\tColumns Match: {}'.format(df[st + '_check'].sum()))
         print('\tSuccess Rate: {}%'.format(round((df[st + '_check'].sum() / len(df)) * 100, 2)))
-        print('Hist Stats')
+        print('STX Stats')
         df[stx + '_check'] = df[stx] == df[stx_test]
         print('\tTotal Rows: {}'.format(len(df)))
         print('\tColumns Match: {}'.format(df[stx + '_check'].sum()))
         print('\tSuccess Rate: {}%'.format(round((df[stx + '_check'].sum() / len(df)) * 100, 2)))
 
+        #print(df[['basic_ub', 'basic_ub_t', 'basic_lb', 'basic_lb_t']])
+        #print(df[['final_ub', 'final_ub_t', 'final_lb', 'final_lb_t']])
+        #print(df[['ST_7_2', 'STX_7_2', 'ST_7_2_test', 'STX_7_2_test', 'ST_7_2_check', 'STX_7_2_check']])
+
+    def test_HA():
+        print('HA_One Test')
+        start = time.time()
+        HA(df)
+        end = time.time()
+        print('Time take by Pandas computations of HA {}'.format(end-start))
+        
+        start = time.time()
+        df['HA_Close_t']=(df['Open']+ df['High']+ df['Low']+df['Close'])/4
+    
+        from collections import namedtuple
+        nt = namedtuple('nt', ['Open','Close'])
+        previous_row = nt(df.ix[0,'Open'],df.ix[0,'Close'])
+        i = 0
+        for row in df.itertuples():
+            ha_open = (previous_row.Open + previous_row.Close) / 2
+            df.ix[i,'HA_Open_t'] = ha_open
+            previous_row = nt(ha_open, row.Close)
+            i += 1
+    
+        df['HA_High_t']=df[['HA_Open_t','HA_Close_t','High']].max(axis=1)
+        df['HA_Low_t']=df[['HA_Open_t','HA_Close_t','Low']].min(axis=1)
+        end = time.time()
+        print('Time take by manual computations of HA {}'.format(end-start))
+        
+
     #test_ema()
     #test_ema(forATR=True)
     #test_ATR()
+    #test_SuperTrend()
     #test_MACD()
-    test_SuperTrend()
+    test_HA()
     
     #print(df.head(10))
     #print(df.tail(10))
