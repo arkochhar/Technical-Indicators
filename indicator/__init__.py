@@ -190,25 +190,6 @@ def SuperTrend(df, period, multiplier, ohlc=['Open', 'High', 'Low', 'Close']):
     # Compute basic upper and lower bands
     df['basic_ub'] = (df[ohlc[1]] + df[ohlc[2]]) / 2 + multiplier * df[atr]
     df['basic_lb'] = (df[ohlc[1]] + df[ohlc[2]]) / 2 - multiplier * df[atr]
-#     df.loc[:period, 'basic_ub'] = 0.00
-#     df.loc[:period, 'basic_lb'] = 0.00
-#     
-#     # Compute final upper and lower bands
-#     df['final_ub'] = 0.00
-#     df['final_lb'] = 0.00
-#     #df['final_ub'] = np.where(np.logical_or(df['basic_ub'] < df['final_ub'].shift(), df[ohlc[3]].shift() > df['final_ub'].shift()), df['basic_ub'], df['final_ub'].shift())
-#     #df['final_lb'] = np.where(np.logical_or(df['basic_lb'] > df['final_lb'].shift(), df[ohlc[3]].shift() < df['final_lb'].shift()), df['basic_lb'], df['final_lb'].shift())
-#     for i in range(0, len(df)):
-#         df.ix[i, 'final_ub'] = df.ix[i, 'basic_ub'] if df.ix[i, 'basic_ub'] < df.ix[i - 1, 'final_ub'] or df.ix[i - 1, ohlc[3]] > df.ix[i - 1, 'final_ub'] else df.ix[i - 1, 'final_ub']
-#         df.ix[i, 'final_lb'] = df.ix[i, 'basic_lb'] if df.ix[i, 'basic_lb'] > df.ix[i - 1, 'final_lb'] or df.ix[i - 1, ohlc[3]] < df.ix[i - 1, 'final_lb'] else df.ix[i - 1, 'final_lb']
-#      
-#     # Set the Supertrend value
-#     df[st] = 0.00
-#     df[st] = np.where(np.logical_and(df[st].shift() == df['final_ub'].shift(), df[ohlc[3]] <= df['final_ub']), df['final_ub'], 
-#                       np.where(np.logical_and(df[st].shift() == df['final_ub'].shift(), df[ohlc[3]] > df['final_ub']), df['final_lb'], 
-#                                np.where(np.logical_and(df[st].shift() == df['final_lb'].shift(), df[ohlc[3]] >= df['final_lb']), df['final_lb'], 
-#                                         np.where(np.logical_and(df[st].shift() == df['final_lb'].shift(), df[ohlc[3]] < df['final_lb']), df['final_ub'], 
-#                                                  0.00))))
 
     index = df.index.name
     df.reset_index(inplace=True)
@@ -594,23 +575,23 @@ if __name__ == '__main__':
         end = time.time()
         print('Time take by Pandas computations of HA {}'.format(end-start))
         
-#         start = time.time()
-#         df['HA_Close_t']=(df['Open']+ df['High']+ df['Low']+df['Close'])/4
-#     
-#         from collections import namedtuple
-#         nt = namedtuple('nt', ['Open','Close'])
-#         previous_row = nt(df.ix[0,'Open'],df.ix[0,'Close'])
-#         i = 0
-#         for row in df.itertuples():
-#             ha_open = (previous_row.Open + previous_row.Close) / 2
-#             df.ix[i,'HA_Open_t'] = ha_open
-#             previous_row = nt(ha_open, row.Close)
-#             i += 1
-#     
-#         df['HA_High_t']=df[['HA_Open_t','HA_Close_t','High']].max(axis=1)
-#         df['HA_Low_t']=df[['HA_Open_t','HA_Close_t','Low']].min(axis=1)
-#         end = time.time()
-#         print('Time take by manual computations of HA {}'.format(end-start))
+        start = time.time()
+        df['HA_Close_t']=(df['Open']+ df['High']+ df['Low']+df['Close'])/4
+     
+        from collections import namedtuple
+        nt = namedtuple('nt', ['Open','Close'])
+        previous_row = nt(df.ix[0,'Open'],df.ix[0,'Close'])
+        i = 0
+        for row in df.itertuples():
+            ha_open = (previous_row.Open + previous_row.Close) / 2
+            df.ix[i,'HA_Open_t'] = ha_open
+            previous_row = nt(ha_open, row.Close)
+            i += 1
+     
+        df['HA_High_t']=df[['HA_Open_t','HA_Close_t','High']].max(axis=1)
+        df['HA_Low_t']=df[['HA_Open_t','HA_Close_t','Low']].min(axis=1)
+        end = time.time()
+        print('Time take by manual computations of HA {}'.format(end-start))
         
 
     #test_ema()
