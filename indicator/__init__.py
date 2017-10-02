@@ -73,7 +73,7 @@ def HA(df, ohlc=['Open', 'High', 'Low', 'Close']):
         if i == 0:
             df.set_value(i, ha_open, ((df.get_value(i, ohlc[0]) + df.get_value(i, ohlc[3])) / 2))
         else:
-            df.set_value(i, ha_open, ((df.get_value(i - 1, ha_open) + df.get_value(i - 1, ha_open)) / 2))
+            df.set_value(i, ha_open, ((df.get_value(i - 1, ha_open) + df.get_value(i - 1, ha_close)) / 2))
             
     if idx:
         df.set_index(idx, inplace=True)
@@ -306,6 +306,7 @@ if __name__ == '__main__':
     import time
     
     df = quandl.get("NSE/NIFTY_50", authtoken="E8LGujxYzNsiUWYDPbGF", start_date='1997-01-01')
+    df.drop(['Shares Traded', 'Turnover (Rs. Cr)'], inplace=True, axis=1)
  
     # unit test EMA algorithm
     def test_ema(colFrom = 'Close', test_period = 5, ignore = 0, forATR=False):
@@ -593,23 +594,23 @@ if __name__ == '__main__':
         end = time.time()
         print('Time take by Pandas computations of HA {}'.format(end-start))
         
-        start = time.time()
-        df['HA_Close_t']=(df['Open']+ df['High']+ df['Low']+df['Close'])/4
-    
-        from collections import namedtuple
-        nt = namedtuple('nt', ['Open','Close'])
-        previous_row = nt(df.ix[0,'Open'],df.ix[0,'Close'])
-        i = 0
-        for row in df.itertuples():
-            ha_open = (previous_row.Open + previous_row.Close) / 2
-            df.ix[i,'HA_Open_t'] = ha_open
-            previous_row = nt(ha_open, row.Close)
-            i += 1
-    
-        df['HA_High_t']=df[['HA_Open_t','HA_Close_t','High']].max(axis=1)
-        df['HA_Low_t']=df[['HA_Open_t','HA_Close_t','Low']].min(axis=1)
-        end = time.time()
-        print('Time take by manual computations of HA {}'.format(end-start))
+#         start = time.time()
+#         df['HA_Close_t']=(df['Open']+ df['High']+ df['Low']+df['Close'])/4
+#     
+#         from collections import namedtuple
+#         nt = namedtuple('nt', ['Open','Close'])
+#         previous_row = nt(df.ix[0,'Open'],df.ix[0,'Close'])
+#         i = 0
+#         for row in df.itertuples():
+#             ha_open = (previous_row.Open + previous_row.Close) / 2
+#             df.ix[i,'HA_Open_t'] = ha_open
+#             previous_row = nt(ha_open, row.Close)
+#             i += 1
+#     
+#         df['HA_High_t']=df[['HA_Open_t','HA_Close_t','High']].max(axis=1)
+#         df['HA_Low_t']=df[['HA_Open_t','HA_Close_t','Low']].min(axis=1)
+#         end = time.time()
+#         print('Time take by manual computations of HA {}'.format(end-start))
         
 
     #test_ema()
@@ -620,4 +621,4 @@ if __name__ == '__main__':
     test_HA()
     
     #print(df.head(10))
-    #print(df.tail(10))
+    print(df.tail(10))
