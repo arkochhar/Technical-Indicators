@@ -286,8 +286,8 @@ if __name__ == '__main__':
     import quandl
     import time
     
-    df = quandl.get("NSE/NIFTY_50", authtoken="E8LGujxYzNsiUWYDPbGF", start_date='1997-01-01')
-    df.drop(['Shares Traded', 'Turnover (Rs. Cr)'], inplace=True, axis=1)
+    df = quandl.get("NSE/NIFTY_50", start_date='1997-01-01')
+    #df.drop(['Shares Traded', 'Turnover (Rs. Cr)'], inplace=True, axis=1)
  
     # unit test EMA algorithm
     def test_ema(colFrom = 'Close', test_period = 5, ignore = 0, forATR=False):
