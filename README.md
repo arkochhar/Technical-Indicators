@@ -6,6 +6,8 @@ Collection of Technical Indicators used in Stock Market Analysis. Currently ther
 3. Average True Range (ATR)
 4. SuperTrend
 5. Moving Average Convergence Divergence (MACD)
+6. Bollinger Band (BBand)
+7. Relative Strength Index (RSI)
 
 Feel free to contribute to the list of indicators in the project. Following are the areas where contributions will be useful;
 

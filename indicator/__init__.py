@@ -131,11 +131,11 @@ def ATR(df, period, ohlc=['Open', 'High', 'Low', 'Close']):
         df['h-l'] = df[ohlc[1]] - df[ohlc[2]]
         df['h-yc'] = abs(df[ohlc[1]] - df[ohlc[3]].shift())
         df['l-yc'] = abs(df[ohlc[2]] - df[ohlc[3]].shift())
-        
+         
         df['TR'] = df[['h-l', 'h-yc', 'l-yc']].max(axis=1)
-        
+         
         df.drop(['h-l', 'h-yc', 'l-yc'], inplace=True, axis=1)
-    
+
     # Compute EMA of true range using ATR formula after ignoring first row
     EMA(df, 'TR', atr, period, alpha=True)
     
@@ -281,26 +281,82 @@ def MACD(df, fastEMA=12, slowEMA=26, signal=9, base='Close'):
     
     return df
 
+def BBand(df, base='Close', period=20, multiplier=2):
+    """
+    Function to compute Bollinger Band (BBand)
+    
+    Args :
+        df : Pandas DataFrame which contains ['date', 'open', 'high', 'low', 'close', 'volume'] columns
+        base : String indicating the column name from which the MACD needs to be computed from (Default Close)
+        period : Integer indicates the period of computation in terms of number of candles
+        multiplier : Integer indicates value to multiply the SD
+        
+    Returns :
+        df : Pandas DataFrame with new columns added for 
+            Upper Band (UpperBB_$period_$multiplier)
+            Lower Band (LowerBB_$period_$multiplier)
+    """
+    
+    upper = 'UpperBB_' + str(period) + '_' + str(multiplier)
+    lower = 'LowerBB_' + str(period) + '_' + str(multiplier)
+    
+    sma = df[base].rolling(window=period, min_periods=period - 1).mean()
+    sd = df[base].rolling(window=period).std()
+    df[upper] = sma + (multiplier * sd)
+    df[lower] = sma - (multiplier * sd)
+    
+    df[upper].fillna(0, inplace=True)
+    df[lower].fillna(0, inplace=True)
+    
+    return df
+
+def RSI(df, base="Close", period=21):
+    """
+    Function to compute Relative Strength Index (RSI)
+    
+    Args :
+        df : Pandas DataFrame which contains ['date', 'open', 'high', 'low', 'close', 'volume'] columns
+        base : String indicating the column name from which the MACD needs to be computed from (Default Close)
+        period : Integer indicates the period of computation in terms of number of candles
+        
+    Returns :
+        df : Pandas DataFrame with new columns added for 
+            Relative Strength Index (RSI_$period)
+    """
+ 
+    delta = df[base].diff()
+    up, down = delta.copy(), delta.copy()
+
+    up[up < 0] = 0
+    down[down > 0] = 0
+    
+    rUp = up.ewm(com=period - 1,  adjust=False).mean()
+    rDown = down.ewm(com=period - 1, adjust=False).mean().abs()
+
+    df['RSI_' + str(period)] = 100 - 100 / (1 + rUp / rDown)    
+
+    return df
+
 # Unit Test
 if __name__ == '__main__':
     import quandl
-    import time
+    #import time
     
-    df = quandl.get("NSE/NIFTY_50", start_date='1997-01-01')
-    #df.drop(['Shares Traded', 'Turnover (Rs. Cr)'], inplace=True, axis=1)
+    df = quandl.get("NSE/NIFTY_50", authtoken="E8LGujxYzNsiUWYDPbGF", start_date='1997-01-01')
+    df.drop(['Shares Traded', 'Turnover (Rs. Cr)'], inplace=True, axis=1)
  
     # unit test EMA algorithm
-    def test_ema(colFrom = 'Close', test_period = 5, ignore = 0, forATR=False):
+    def test_EMA(df, colFrom = 'Close', test_period = 5, ignore = 0, forATR=False):
         colTo = 'ema_' + str(test_period)
         
         # Actual function to test compare
-        print('EMA Test with alpha {}'.format(forATR))
-        start = time.time()
-        EMA(df, colFrom, colTo, test_period, alpha=forATR)
-        end = time.time()
-        print('Time taken by Pandas computations for EMA {}'.format(end-start))
+        #print('EMA Test with alpha {}'.format(forATR))
+        #start = time.time()
+        #EMA(df, colFrom, colTo, test_period, alpha=forATR)
+        #end = time.time()
+        #print('Time taken by Pandas computations for EMA {}'.format(end-start))
 
-        start = time.time()
+        #start = time.time()
         coef = 2 / (test_period + 1)
         periodTotal = 0
         colTest = colTo + '_test'
@@ -321,25 +377,23 @@ if __name__ == '__main__':
                     df.set_value(i, colTest, (((df.get_value(i, colFrom) - df.get_value(i - 1, colTest)) * coef) + df.get_value(i - 1, colTest)))
         
         df.set_index('Date', inplace=True)
-        end = time.time()
-        print('Time taken by manual computations for EMA {}'.format(end-start))
+        #end = time.time()
+        #print('Time taken by manual computations for EMA {}'.format(end-start))
  
-        df[colTest + '_check'] = df[colTo].round(6) == df[colTest].round(6)
-        print('\tTotal Rows: {}'.format(len(df)))
-        print('\tColumns Match: {}'.format(df[colTest + '_check'].sum()))
-        print('\tSuccess Rate: {}%'.format(round((df[colTest + '_check'].sum() / len(df)) * 100, 2)))
+        #df[colTest + '_check'] = df[colTo].round(6) == df[colTest].round(6)
+        #print('\tTotal Rows: {}'.format(len(df)))
+        #print('\tColumns Match: {}'.format(df[colTest + '_check'].sum()))
+        #print('\tSuccess Rate: {}%'.format(round((df[colTest + '_check'].sum() / len(df)) * 100, 2)))
     
-    def test_ATR():
-        print('ATR Test')
-        start = time.time()
-        ATR(df, 7)
-        end = time.time()
-        print('Time taken by Pandas computations for ATR {}'.format(end-start))
+    def test_ATR(df, test_period=7):
+        #print('ATR Test')
+        #start = time.time()
+        #ATR(df, 7)
+        #end = time.time()
+        #print('Time taken by Pandas computations for ATR {}'.format(end-start))
 
-        start = time.time()
         ignore=0
-        test_period = 7
-        start = time.time()
+        #start = time.time()
         periodTotal = 0
         colFrom = 'TR'
         colTo = 'ATR_7'
@@ -364,21 +418,21 @@ if __name__ == '__main__':
                 df.set_value(i, colTest, (periodTotal / test_period))
             else:
                 df.set_value(i, colTest, (((df.get_value(i - 1, colTest) * (test_period - 1)) + df.get_value(i, colFrom)) / test_period))    
-        df.set_index('Date', inplace=True)
-        end = time.time()
-        print('Time taken by manual computations for ATR {}'.format(end-start))
+        #df.set_index('Date', inplace=True)
+        #end = time.time()
+        #print('Time taken by manual computations for ATR {}'.format(end-start))
         
-        df[colTest + '_check'] = df[colTo].round(6) == df[colTest].round(6)
-        print('\tTotal Rows: {}'.format(len(df)))
-        print('\tColumns Match: {}'.format(df[colTest + '_check'].sum()))
-        print('\tSuccess Rate: {}%'.format(round((df[colTest + '_check'].sum() / len(df)) * 100, 2)))
+        #df[colTest + '_check'] = df[colTo].round(6) == df[colTest].round(6)
+        #print('\tTotal Rows: {}'.format(len(df)))
+        #print('\tColumns Match: {}'.format(df[colTest + '_check'].sum()))
+        #print('\tSuccess Rate: {}%'.format(round((df[colTest + '_check'].sum() / len(df)) * 100, 2)))
 
-    def test_MACD():
-        print('MACD Test')
-        start = time.time()
-        MACD(df)
-        end = time.time()
-        print('Time taken by Pandas computations for MACD {}'.format(end-start))
+    def test_MACD(df):
+        #print('MACD Test')
+        #start = time.time()
+        #MACD(df)
+        #end = time.time()
+        #print('Time taken by Pandas computations for MACD {}'.format(end-start))
 
         df.reset_index(inplace=True)
 
@@ -399,7 +453,7 @@ if __name__ == '__main__':
     
         colFrom = 'Close'
 
-        start = time.time()
+        #start = time.time()
         # Compute fast EMA    
         #EMA(df, base, fE, fastEMA)
         periodTotal = 0
@@ -464,60 +518,58 @@ if __name__ == '__main__':
         # Compute MACD Histogram
         df[hist_test] = np.where(np.logical_and(np.logical_not(df[macd_test] == 0), np.logical_not(df[sig_test] == 0)), df[macd_test] - df[sig_test], 0)
 
-        end = time.time()
-        print('Time taken by manual computations for MACD {}'.format(end-start))
+        #end = time.time()
+        #print('Time taken by manual computations for MACD {}'.format(end-start))
 
         df.set_index('Date', inplace=True)
 
-        print('MACD Stats')
-        df[macd + '_check'] = df[macd].round(6) == df[macd_test].round(6)
-        print('\tTotal Rows: {}'.format(len(df)))
-        print('\tColumns Match: {}'.format(df[macd + '_check'].sum()))
-        print('\tSuccess Rate: {}%'.format(round((df[macd + '_check'].sum() / len(df)) * 100, 2)))
-        print('Signal Stats')
-        df[sig + '_check'] = df[sig].round(6) == df[sig_test].round(6)
-        print('\tTotal Rows: {}'.format(len(df)))
-        print('\tColumns Match: {}'.format(df[sig + '_check'].sum()))
-        print('\tSuccess Rate: {}%'.format(round((df[sig + '_check'].sum() / len(df)) * 100, 2)))
-        print('Hist Stats')
-        df[hist + '_check'] = df[hist].round(6) == df[hist_test].round(6)
-        print('\tTotal Rows: {}'.format(len(df)))
-        print('\tColumns Match: {}'.format(df[hist + '_check'].sum()))
-        print('\tSuccess Rate: {}%'.format(round((df[hist + '_check'].sum() / len(df)) * 100, 2)))
+        #print('MACD Stats')
+        #df[macd + '_check'] = df[macd].round(6) == df[macd_test].round(6)
+        #print('\tTotal Rows: {}'.format(len(df)))
+        #print('\tColumns Match: {}'.format(df[macd + '_check'].sum()))
+        #print('\tSuccess Rate: {}%'.format(round((df[macd + '_check'].sum() / len(df)) * 100, 2)))
+        #print('Signal Stats')
+        #df[sig + '_check'] = df[sig].round(6) == df[sig_test].round(6)
+        #print('\tTotal Rows: {}'.format(len(df)))
+        #print('\tColumns Match: {}'.format(df[sig + '_check'].sum()))
+        #print('\tSuccess Rate: {}%'.format(round((df[sig + '_check'].sum() / len(df)) * 100, 2)))
+        #print('Hist Stats')
+        #df[hist + '_check'] = df[hist].round(6) == df[hist_test].round(6)
+        #print('\tTotal Rows: {}'.format(len(df)))
+        #print('\tColumns Match: {}'.format(df[hist + '_check'].sum()))
+        #print('\tSuccess Rate: {}%'.format(round((df[hist + '_check'].sum() / len(df)) * 100, 2)))
         
-    def test_SuperTrend():
-        period = 10
-        multiplier = 3
+    def test_SuperTrend(df, period=10, multiplier=3):
         atr = 'ATR_' + str(period)
         st = 'ST_' + str(period) + '_' + str(multiplier)
         stx = 'STX_' + str(period) + '_' + str(multiplier)
         st_test = st + '_test'
         stx_test = stx + '_test'
 
-        print('SuperTrend Test')
-        start = time.time()
-        SuperTrend(df, period, multiplier)
-        end = time.time()
-        print('Time taken by Pandas computations for SuperTrend {}'.format(end-start))
+        #print('SuperTrend Test')
+        #start = time.time()
+        #SuperTrend(df, period, multiplier)
+        #end = time.time()
+        #print('Time taken by Pandas computations for SuperTrend {}'.format(end-start))
         
-        start = time.time()
+        #start = time.time()
         ATR(df, period)
         df['basic_ub_t'] = (df['High'] + df['Low']) / 2 + multiplier * df[atr]
         df['basic_lb_t'] = (df['High'] + df['Low']) / 2 - multiplier * df[atr]
-       
+        
         index = df.index.name
         df.reset_index(inplace=True)
-
+ 
         df.loc[:period, 'basic_ub_t'] = 0.00
         df.loc[:period, 'basic_lb_t'] = 0.00
-         
+          
         # Compute final upper and lower bands
         df['final_ub_t'] = 0.00
         df['final_lb_t'] = 0.00
         for i in range(period, len(df)):
             df.ix[i, 'final_ub_t'] = df.ix[i, 'basic_ub_t'] if df.ix[i, 'basic_ub_t'] < df.ix[i - 1, 'final_ub_t'] or df.ix[i - 1, 'Close'] > df.ix[i - 1, 'final_ub_t'] else df.ix[i - 1, 'final_ub_t']
             df.ix[i, 'final_lb_t'] = df.ix[i, 'basic_lb_t'] if df.ix[i, 'basic_lb_t'] > df.ix[i - 1, 'final_lb_t'] or df.ix[i - 1, 'Close'] < df.ix[i - 1, 'final_lb_t'] else df.ix[i - 1, 'final_lb_t']
-          
+           
         # Set the Supertrend value
         df[st_test] = 0.00
         for i in range(period, len(df)):
@@ -525,43 +577,43 @@ if __name__ == '__main__':
                                 df.ix[i, 'final_lb_t'] if df.ix[i - 1, st_test] == df.ix[i - 1, 'final_ub_t'] and df.ix[i, 'Close'] >  df.ix[i, 'final_ub_t'] else \
                                 df.ix[i, 'final_lb_t'] if df.ix[i - 1, st_test] == df.ix[i - 1, 'final_lb_t'] and df.ix[i, 'Close'] >= df.ix[i, 'final_lb_t'] else \
                                 df.ix[i, 'final_ub_t'] if df.ix[i - 1, st_test] == df.ix[i - 1, 'final_lb_t'] and df.ix[i, 'Close'] <  df.ix[i, 'final_lb_t'] else 0.00 
-                
-    
+                 
+     
         df.set_index(index, inplace=True)
-        
+         
         # Mark the trend direction up/down
         df[stx_test] = np.where((df[st_test] > 0.00), np.where((df['Close'] < df[st_test]), 'down',  'up'), np.NaN)
-    
+     
         # Remove basic and final bands from the columns
         df.drop(['basic_ub_t', 'basic_lb_t', 'final_ub_t', 'final_lb_t'], inplace=True, axis=1)
-        end = time.time()
-        print('Time taken by manual computations for SuperTrend {}'.format(end-start))
-
-        print('ST Stats')
-        df[st + '_check'] = df[st].round(6) == df[st_test].round(6)
-        print('\tTotal Rows: {}'.format(len(df)))
-        print('\tColumns Match: {}'.format(df[st + '_check'].sum()))
-        print('\tSuccess Rate: {}%'.format(round((df[st + '_check'].sum() / len(df)) * 100, 2)))
-        print('STX Stats')
-        df[stx + '_check'] = df[stx] == df[stx_test]
-        print('\tTotal Rows: {}'.format(len(df)))
-        print('\tColumns Match: {}'.format(df[stx + '_check'].sum()))
-        print('\tSuccess Rate: {}%'.format(round((df[stx + '_check'].sum() / len(df)) * 100, 2)))
+        #end = time.time()
+        #print('Time taken by manual computations for SuperTrend {}'.format(end-start))
+ 
+        #print('ST Stats')
+        #df[st + '_check'] = df[st].round(6) == df[st_test].round(6)
+        #print('\tTotal Rows: {}'.format(len(df)))
+        #print('\tColumns Match: {}'.format(df[st + '_check'].sum()))
+        #print('\tSuccess Rate: {}%'.format(round((df[st + '_check'].sum() / len(df)) * 100, 2)))
+        #print('STX Stats')
+        #df[stx + '_check'] = df[stx] == df[stx_test]
+        #print('\tTotal Rows: {}'.format(len(df)))
+        #print('\tColumns Match: {}'.format(df[stx + '_check'].sum()))
+        #print('\tSuccess Rate: {}%'.format(round((df[stx + '_check'].sum() / len(df)) * 100, 2)))
 
         #print(df[['basic_ub', 'basic_ub_t', 'basic_lb', 'basic_lb_t']])
         #print(df[['final_ub', 'final_ub_t', 'final_lb', 'final_lb_t']])
         #print(df[['ST_7_2', 'STX_7_2', 'ST_7_2_test', 'STX_7_2_test', 'ST_7_2_check', 'STX_7_2_check']])
 
-    def test_HA():
-        print('HA_One Test')
-        start = time.time()
-        HA(df)
-        end = time.time()
-        print('Time taken by Pandas computations of HA {}'.format(end-start))
+    def test_HA(df):
+        #print('HA_One Test')
+        #start = time.time()
+        #HA(df)
+        #end = time.time()
+        #print('Time taken by Pandas computations of HA {}'.format(end-start))
         
-        start = time.time()
+        #start = time.time()
         df['HA_Close_t']=(df['Open']+ df['High']+ df['Low']+df['Close'])/4
-     
+      
         from collections import namedtuple
         nt = namedtuple('nt', ['Open','Close'])
         previous_row = nt(df.ix[0,'Open'],df.ix[0,'Close'])
@@ -571,18 +623,22 @@ if __name__ == '__main__':
             df.ix[i,'HA_Open_t'] = ha_open
             previous_row = nt(ha_open, row.Close)
             i += 1
-     
+      
         df['HA_High_t']=df[['HA_Open_t','HA_Close_t','High']].max(axis=1)
         df['HA_Low_t']=df[['HA_Open_t','HA_Close_t','Low']].min(axis=1)
-        end = time.time()
-        print('Time taken by manual computations of HA {}'.format(end-start))
+        #end = time.time()
+        #print('Time taken by manual computations of HA {}'.format(end-start))
         
-    test_ema()
-    test_ema(forATR=True)
-    test_ATR()
-    test_SuperTrend()
-    test_MACD()
-    test_HA()
+    #test_EMA(df)
+    #test_EMA(df, forATR=True)
+    #test_ATR(df)
+    #test_SuperTrend(df)
+    #test_MACD(df)
+    #test_HA(df)
+    
+    #BBand(df)
+    
+    #RSI(df)
     
     #print(df.head(10))
     #print(df.tail(10))
