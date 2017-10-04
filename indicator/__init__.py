@@ -127,7 +127,7 @@ def ATR(df, period, ohlc=['Open', 'High', 'Low', 'Close']):
     atr = 'ATR_' + str(period)
 
     # Compute true range only if it is not computed and stored earlier in the df
-    if not 'tr' in df.columns:
+    if not 'TR' in df.columns:
         df['h-l'] = df[ohlc[1]] - df[ohlc[2]]
         df['h-yc'] = abs(df[ohlc[1]] - df[ohlc[3]].shift())
         df['l-yc'] = abs(df[ohlc[2]] - df[ohlc[3]].shift())
@@ -333,14 +333,15 @@ def RSI(df, base="Close", period=21):
     rUp = up.ewm(com=period - 1,  adjust=False).mean()
     rDown = down.ewm(com=period - 1, adjust=False).mean().abs()
 
-    df['RSI_' + str(period)] = 100 - 100 / (1 + rUp / rDown)    
+    df['RSI_' + str(period)] = 100 - 100 / (1 + rUp / rDown)
+    df['RSI_' + str(period)].fillna(0, inplace=True)
 
     return df
 
 # Unit Test
 if __name__ == '__main__':
     import quandl
-    #import time
+    import time
     
     df = quandl.get("NSE/NIFTY_50", start_date='1997-01-01')
     df.drop(['Shares Traded', 'Turnover (Rs. Cr)'], inplace=True, axis=1)
@@ -350,13 +351,13 @@ if __name__ == '__main__':
         colTo = 'ema_' + str(test_period)
         
         # Actual function to test compare
-        #print('EMA Test with alpha {}'.format(forATR))
-        #start = time.time()
-        #EMA(df, colFrom, colTo, test_period, alpha=forATR)
-        #end = time.time()
-        #print('Time taken by Pandas computations for EMA {}'.format(end-start))
+        print('EMA Test with alpha {}'.format(forATR))
+        start = time.time()
+        EMA(df, colFrom, colTo, test_period, alpha=forATR)
+        end = time.time()
+        print('Time taken by Pandas computations for EMA {}'.format(end-start))
 
-        #start = time.time()
+        start = time.time()
         coef = 2 / (test_period + 1)
         periodTotal = 0
         colTest = colTo + '_test'
@@ -377,23 +378,23 @@ if __name__ == '__main__':
                     df.set_value(i, colTest, (((df.get_value(i, colFrom) - df.get_value(i - 1, colTest)) * coef) + df.get_value(i - 1, colTest)))
         
         df.set_index('Date', inplace=True)
-        #end = time.time()
-        #print('Time taken by manual computations for EMA {}'.format(end-start))
+        end = time.time()
+        print('Time taken by manual computations for EMA {}'.format(end-start))
  
-        #df[colTest + '_check'] = df[colTo].round(6) == df[colTest].round(6)
-        #print('\tTotal Rows: {}'.format(len(df)))
-        #print('\tColumns Match: {}'.format(df[colTest + '_check'].sum()))
-        #print('\tSuccess Rate: {}%'.format(round((df[colTest + '_check'].sum() / len(df)) * 100, 2)))
+        df[colTest + '_check'] = df[colTo].round(6) == df[colTest].round(6)
+        print('\tTotal Rows: {}'.format(len(df)))
+        print('\tColumns Match: {}'.format(df[colTest + '_check'].sum()))
+        print('\tSuccess Rate: {}%'.format(round((df[colTest + '_check'].sum() / len(df)) * 100, 2)))
     
     def test_ATR(df, test_period=7):
-        #print('ATR Test')
-        #start = time.time()
-        #ATR(df, 7)
-        #end = time.time()
-        #print('Time taken by Pandas computations for ATR {}'.format(end-start))
+        print('ATR Test')
+        start = time.time()
+        ATR(df, 7)
+        end = time.time()
+        print('Time taken by Pandas computations for ATR {}'.format(end-start))
 
         ignore=0
-        #start = time.time()
+        start = time.time()
         periodTotal = 0
         colFrom = 'TR'
         colTo = 'ATR_7'
@@ -418,21 +419,21 @@ if __name__ == '__main__':
                 df.set_value(i, colTest, (periodTotal / test_period))
             else:
                 df.set_value(i, colTest, (((df.get_value(i - 1, colTest) * (test_period - 1)) + df.get_value(i, colFrom)) / test_period))    
-        #df.set_index('Date', inplace=True)
-        #end = time.time()
-        #print('Time taken by manual computations for ATR {}'.format(end-start))
+        df.set_index('Date', inplace=True)
+        end = time.time()
+        print('Time taken by manual computations for ATR {}'.format(end-start))
         
-        #df[colTest + '_check'] = df[colTo].round(6) == df[colTest].round(6)
-        #print('\tTotal Rows: {}'.format(len(df)))
-        #print('\tColumns Match: {}'.format(df[colTest + '_check'].sum()))
-        #print('\tSuccess Rate: {}%'.format(round((df[colTest + '_check'].sum() / len(df)) * 100, 2)))
+        df[colTest + '_check'] = df[colTo].round(6) == df[colTest].round(6)
+        print('\tTotal Rows: {}'.format(len(df)))
+        print('\tColumns Match: {}'.format(df[colTest + '_check'].sum()))
+        print('\tSuccess Rate: {}%'.format(round((df[colTest + '_check'].sum() / len(df)) * 100, 2)))
 
     def test_MACD(df):
-        #print('MACD Test')
-        #start = time.time()
-        #MACD(df)
-        #end = time.time()
-        #print('Time taken by Pandas computations for MACD {}'.format(end-start))
+        print('MACD Test')
+        start = time.time()
+        MACD(df)
+        end = time.time()
+        print('Time taken by Pandas computations for MACD {}'.format(end-start))
 
         df.reset_index(inplace=True)
 
@@ -453,7 +454,7 @@ if __name__ == '__main__':
     
         colFrom = 'Close'
 
-        #start = time.time()
+        start = time.time()
         # Compute fast EMA    
         #EMA(df, base, fE, fastEMA)
         periodTotal = 0
@@ -518,26 +519,26 @@ if __name__ == '__main__':
         # Compute MACD Histogram
         df[hist_test] = np.where(np.logical_and(np.logical_not(df[macd_test] == 0), np.logical_not(df[sig_test] == 0)), df[macd_test] - df[sig_test], 0)
 
-        #end = time.time()
-        #print('Time taken by manual computations for MACD {}'.format(end-start))
+        end = time.time()
+        print('Time taken by manual computations for MACD {}'.format(end-start))
 
         df.set_index('Date', inplace=True)
 
-        #print('MACD Stats')
-        #df[macd + '_check'] = df[macd].round(6) == df[macd_test].round(6)
-        #print('\tTotal Rows: {}'.format(len(df)))
-        #print('\tColumns Match: {}'.format(df[macd + '_check'].sum()))
-        #print('\tSuccess Rate: {}%'.format(round((df[macd + '_check'].sum() / len(df)) * 100, 2)))
-        #print('Signal Stats')
-        #df[sig + '_check'] = df[sig].round(6) == df[sig_test].round(6)
-        #print('\tTotal Rows: {}'.format(len(df)))
-        #print('\tColumns Match: {}'.format(df[sig + '_check'].sum()))
-        #print('\tSuccess Rate: {}%'.format(round((df[sig + '_check'].sum() / len(df)) * 100, 2)))
-        #print('Hist Stats')
-        #df[hist + '_check'] = df[hist].round(6) == df[hist_test].round(6)
-        #print('\tTotal Rows: {}'.format(len(df)))
-        #print('\tColumns Match: {}'.format(df[hist + '_check'].sum()))
-        #print('\tSuccess Rate: {}%'.format(round((df[hist + '_check'].sum() / len(df)) * 100, 2)))
+        print('MACD Stats')
+        df[macd + '_check'] = df[macd].round(6) == df[macd_test].round(6)
+        print('\tTotal Rows: {}'.format(len(df)))
+        print('\tColumns Match: {}'.format(df[macd + '_check'].sum()))
+        print('\tSuccess Rate: {}%'.format(round((df[macd + '_check'].sum() / len(df)) * 100, 2)))
+        print('Signal Stats')
+        df[sig + '_check'] = df[sig].round(6) == df[sig_test].round(6)
+        print('\tTotal Rows: {}'.format(len(df)))
+        print('\tColumns Match: {}'.format(df[sig + '_check'].sum()))
+        print('\tSuccess Rate: {}%'.format(round((df[sig + '_check'].sum() / len(df)) * 100, 2)))
+        print('Hist Stats')
+        df[hist + '_check'] = df[hist].round(6) == df[hist_test].round(6)
+        print('\tTotal Rows: {}'.format(len(df)))
+        print('\tColumns Match: {}'.format(df[hist + '_check'].sum()))
+        print('\tSuccess Rate: {}%'.format(round((df[hist + '_check'].sum() / len(df)) * 100, 2)))
         
     def test_SuperTrend(df, period=10, multiplier=3):
         atr = 'ATR_' + str(period)
@@ -546,11 +547,11 @@ if __name__ == '__main__':
         st_test = st + '_test'
         stx_test = stx + '_test'
 
-        #print('SuperTrend Test')
-        #start = time.time()
-        #SuperTrend(df, period, multiplier)
-        #end = time.time()
-        #print('Time taken by Pandas computations for SuperTrend {}'.format(end-start))
+        print('SuperTrend Test')
+        start = time.time()
+        SuperTrend(df, period, multiplier)
+        end = time.time()
+        print('Time taken by Pandas computations for SuperTrend {}'.format(end-start))
         
         #start = time.time()
         ATR(df, period)
@@ -586,32 +587,33 @@ if __name__ == '__main__':
      
         # Remove basic and final bands from the columns
         df.drop(['basic_ub_t', 'basic_lb_t', 'final_ub_t', 'final_lb_t'], inplace=True, axis=1)
-        #end = time.time()
-        #print('Time taken by manual computations for SuperTrend {}'.format(end-start))
+        end = time.time()
+        print('Time taken by manual computations for SuperTrend {}'.format(end-start))
  
-        #print('ST Stats')
-        #df[st + '_check'] = df[st].round(6) == df[st_test].round(6)
-        #print('\tTotal Rows: {}'.format(len(df)))
-        #print('\tColumns Match: {}'.format(df[st + '_check'].sum()))
-        #print('\tSuccess Rate: {}%'.format(round((df[st + '_check'].sum() / len(df)) * 100, 2)))
-        #print('STX Stats')
-        #df[stx + '_check'] = df[stx] == df[stx_test]
-        #print('\tTotal Rows: {}'.format(len(df)))
-        #print('\tColumns Match: {}'.format(df[stx + '_check'].sum()))
-        #print('\tSuccess Rate: {}%'.format(round((df[stx + '_check'].sum() / len(df)) * 100, 2)))
+        print('ST Stats')
+        df[st + '_check'] = df[st].round(6) == df[st_test].round(6)
+        print('\tTotal Rows: {}'.format(len(df)))
+        print('\tColumns Match: {}'.format(df[st + '_check'].sum()))
+        print('\tSuccess Rate: {}%'.format(round((df[st + '_check'].sum() / len(df)) * 100, 2)))
+        print('STX Stats')
+        df[stx + '_check'] = df[stx] == df[stx_test]
+        print('\tTotal Rows: {}'.format(len(df)))
+        print('\tColumns Match: {}'.format(df[stx + '_check'].sum()))
+        print('\tSuccess Rate: {}%'.format(round((df[stx + '_check'].sum() / len(df)) * 100, 2)))
 
         #print(df[['basic_ub', 'basic_ub_t', 'basic_lb', 'basic_lb_t']])
         #print(df[['final_ub', 'final_ub_t', 'final_lb', 'final_lb_t']])
         #print(df[['ST_7_2', 'STX_7_2', 'ST_7_2_test', 'STX_7_2_test', 'ST_7_2_check', 'STX_7_2_check']])
 
     def test_HA(df):
-        #print('HA_One Test')
-        #start = time.time()
-        #HA(df)
-        #end = time.time()
-        #print('Time taken by Pandas computations of HA {}'.format(end-start))
+        print('HA_One Test')
+        start = time.time()
+        HA(df)
+        end = time.time()
+        print('Time taken by Pandas computations of HA {}'.format(end-start))
         
-        #start = time.time()
+        start = time.time()
+        
         df['HA_Close_t']=(df['Open']+ df['High']+ df['Low']+df['Close'])/4
       
         from collections import namedtuple
@@ -626,19 +628,19 @@ if __name__ == '__main__':
       
         df['HA_High_t']=df[['HA_Open_t','HA_Close_t','High']].max(axis=1)
         df['HA_Low_t']=df[['HA_Open_t','HA_Close_t','Low']].min(axis=1)
-        #end = time.time()
-        #print('Time taken by manual computations of HA {}'.format(end-start))
+        end = time.time()
+        print('Time taken by manual computations of HA {}'.format(end-start))
         
-    #test_EMA(df)
-    #test_EMA(df, forATR=True)
-    #test_ATR(df)
-    #test_SuperTrend(df)
-    #test_MACD(df)
-    #test_HA(df)
+    test_EMA(df)
+    test_EMA(df, forATR=True)
+    test_ATR(df)
+    test_SuperTrend(df)
+    test_MACD(df)
+    test_HA(df)
     
-    #BBand(df)
+    BBand(df)
     
-    #RSI(df)
+    RSI(df)
     
-    #print(df.head(10))
-    #print(df.tail(10))
+    print(df.head(10))
+    print(df.tail(10))
