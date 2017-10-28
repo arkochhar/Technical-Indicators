@@ -2,12 +2,14 @@
 Collection of Technical Indicators used in Stock Market Analysis. Currently there are following indications in the project;
 
 1. Heiken Ashi Candles (HA)
-2. Exponential Moving Average (EMA)
-3. Average True Range (ATR)
-4. SuperTrend
-5. Moving Average Convergence Divergence (MACD)
-6. Bollinger Band (BBand)
-7. Relative Strength Index (RSI)
+2. Simple Moving Average (SMA)
+3. Standard Deviation (STDDEV)
+4. Exponential Moving Average (EMA)
+5. Average True Range (ATR)
+6. SuperTrend (SuperTrend)
+7. Moving Average Convergence Divergence (MACD)
+8. Bollinger Band (BBand)
+9. Relative Strength Index (RSI)
 
 Feel free to contribute to the list of indicators in the project. Following are the areas where contributions will be useful;
 

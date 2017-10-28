@@ -83,6 +83,44 @@ def HA(df, ohlc=['Open', 'High', 'Low', 'Close']):
     
     return df
 
+def SMA(df, base, target, period):
+    """
+    Function to compute Simple Moving Average (SMA)
+    
+    Args :
+        df : Pandas DataFrame which contains ['date', 'open', 'high', 'low', 'close', 'volume'] columns
+        base : String indicating the column name from which the SMA needs to be computed from
+        target : String indicates the column name to which the computed data needs to be stored
+        period : Integer indicates the period of computation in terms of number of candles
+        
+    Returns :
+        df : Pandas DataFrame with new column added with name 'target'
+    """
+
+    df[target] = df[base].rolling(window=period).mean()
+    df[target].fillna(0, inplace=True)
+
+    return df
+
+def STDDEV(df, base, target, period):
+    """
+    Function to compute Standard Deviation (STDDEV)
+    
+    Args :
+        df : Pandas DataFrame which contains ['date', 'open', 'high', 'low', 'close', 'volume'] columns
+        base : String indicating the column name from which the SMA needs to be computed from
+        target : String indicates the column name to which the computed data needs to be stored
+        period : Integer indicates the period of computation in terms of number of candles
+        
+    Returns :
+        df : Pandas DataFrame with new column added with name 'target'
+    """
+
+    df[target] = df[base].rolling(window=period).std()
+    df[target].fillna(0, inplace=True)
+
+    return df
+
 def EMA(df, base, target, period, alpha=False):
     """
     Function to compute Exponential Moving Average (EMA)
