@@ -346,3 +346,54 @@ def RSI(df, base="Close", period=21):
     df['RSI_' + str(period)].fillna(0, inplace=True)
 
     return df
+
+def Ichimoku(df, ohlc=['Open', 'High', 'Low', 'Close'], param=[9, 26, 52, 26]):
+    """
+    Function to compute Ichimoku Cloud parameter (Ichimoku)
+    
+    Args :
+        df : Pandas DataFrame which contains ['date', 'open', 'high', 'low', 'close', 'volume'] columns
+        ohlc: List defining OHLC Column names (default ['Open', 'High', 'Low', 'Close'])
+        param: Periods to be used in computation (default [tenkan_sen_period, kijun_sen_period, senkou_span_period, chikou_span_period] = [9, 26, 52, 26])
+        
+    Returns :
+        df : Pandas DataFrame with new columns added for ['Tenkan Sen', 'Kijun Sen', 'Senkou Span A', 'Senkou Span B', 'Chikou Span']
+    """
+    
+    high = df[ohlc[1]]
+    low = df[ohlc[2]]
+    close = df[ohlc[3]]
+    
+    tenkan_sen_period = param[0]
+    kijun_sen_period = param[1]
+    senkou_span_period = param[2]
+    chikou_span_period = param[3]
+    
+    tenkan_sen_column = 'Tenkan Sen'
+    kijun_sen_column = 'Kijun Sen'
+    senkou_span_a_column = 'Senkou Span A'
+    senkou_span_b_column = 'Senkou Span B'
+    chikou_span_column = 'Chikou Span'
+    
+    # Tenkan-sen (Conversion Line)
+    tenkan_sen_high = high.rolling(window=tenkan_sen_period).max()
+    tenkan_sen_low = low.rolling(window=tenkan_sen_period).min()
+    df[tenkan_sen_column] = (tenkan_sen_high + tenkan_sen_low) / 2
+    
+    # Kijun-sen (Base Line)
+    kijun_sen_high = high.rolling(window=kijun_sen_period).max()
+    kijun_sen_low = low.rolling(window=kijun_sen_period).min()
+    df[kijun_sen_column] = (kijun_sen_high + kijun_sen_low) / 2
+    
+    # Senkou Span A (Leading Span A)
+    df[senkou_span_a_column] = ((df[tenkan_sen_column] + df[kijun_sen_column]) / 2).shift(kijun_sen_period)
+    
+    # Senkou Span B (Leading Span B)
+    senkou_span_high = high.rolling(window=senkou_span_period).max()
+    senkou_span_low = low.rolling(window=senkou_span_period).min()
+    df[senkou_span_b_column] = ((senkou_span_high + senkou_span_low) / 2).shift(kijun_sen_period)
+    
+    # The most current closing price plotted chikou_span_period time periods behind
+    df[chikou_span_column] = close.shift(-1 * chikou_span_period)
+    
+    return df

@@ -10,6 +10,7 @@ Collection of Technical Indicators used in Stock Market Analysis. Currently ther
 7. Moving Average Convergence Divergence (MACD)
 8. Bollinger Band (BBand)
 9. Relative Strength Index (RSI)
+10. Ichimoku Cloud (Ichimoku) [not been able to verify the output yet]
 
 Feel free to contribute to the list of indicators in the project. Following are the areas where contributions will be useful;
 
