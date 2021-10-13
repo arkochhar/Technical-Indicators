@@ -135,7 +135,8 @@ def EMA(df, base, target, period, alpha=False):
     
     if (alpha == True):
         # (1 - alpha) * previous_val + alpha * current_val where alpha = 1 / period
-        df[target] = con.ewm(alpha=1 / period, adjust=False).mean()
+        alpha= 1 / period
+        df[target] = con.ewm(alpha, adjust=False).mean()
     else:
         # ((current_val - previous_val) * coeff) + previous_val where coeff = 2 / (period + 1)
         df[target] = con.ewm(span=period, adjust=False).mean()
